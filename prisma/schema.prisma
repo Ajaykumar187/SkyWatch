@@ -1,0 +1,118 @@
+// Prisma schema for SkyWatch
+// Configured for PostgreSQL with support for optional environment DATABASE_URL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String             @id @default(uuid())
+  username     String             @unique
+  email        String             @unique
+  salt         String
+  passwordHash String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  sessions     Session[]
+  favorites    FavoriteCity[]
+  history      SearchHistory[]
+  preference   AlertPreference?
+  customAlerts CustomAlertRule[]
+  alertHistory AlertHistory[]
+  layout       DashboardLayout?
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model FavoriteCity {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  lat       Float
+  lon       Float
+  country   String?
+  addedAt   DateTime @default(now())
+
+  @@unique([userId, name])
+}
+
+model SearchHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  query     String
+  at        DateTime @default(now())
+}
+
+model AlertPreference {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  heavyRain    Boolean  @default(true)
+  thunderstorm Boolean  @default(true)
+  heatwave     Boolean  @default(true)
+  flood        Boolean  @default(true)
+  emailEnabled Boolean  @default(false)
+  email        String?
+  pushEnabled  Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+}
+
+model CustomAlertRule {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  metric        String   // "temperature" | "windSpeed" | "rainfall" | "uvIndex" | "aqi"
+  operator      String   // "gt" | "lt" | "gte" | "lte"
+  threshold     Float
+  durationHours Int      @default(1)
+  severity      String   @default("warning") // "info" | "watch" | "warning" | "danger"
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model AlertHistory {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location    String
+  title       String
+  message     String
+  severity    String
+  kind        String
+  read        Boolean  @default(false)
+  triggeredAt DateTime @default(now())
+}
+
+model DashboardLayout {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visibleCards String   // JSON string array of active widget IDs
+  cardOrder    String   // JSON string array of order
+  tempUnit     String   @default("C") // "C" | "F"
+  windUnit     String   @default("kmh") // "kmh" | "mph" | "ms"
+  updatedAt    DateTime @updatedAt
+}
+
+model ApiCacheEntry {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  data      String   // JSON payload
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

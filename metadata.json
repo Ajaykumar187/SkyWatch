@@ -1,0 +1,5 @@
+{
+  "name": "SkyWatch",
+  "description": "A full weather monitoring dashboard: forecasts, air quality, AI insights, maps, alerts, and reports.",
+  "prompt": "SkyWatch weather monitoring dashboard with live conditions, forecasts, and analytics."
+}
